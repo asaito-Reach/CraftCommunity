@@ -1,11 +1,3 @@
-/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 27: /bin/ps: Operation not permitted
-export HOMEBREW_PREFIX="/opt/homebrew";
-export HOMEBREW_CELLAR="/opt/homebrew/Cellar";
-export HOMEBREW_REPOSITORY="/opt/homebrew";
-export PATH="/opt/homebrew/bin:/opt/homebrew/sbin${PATH+:$PATH}";
-export MANPATH="/opt/homebrew/share/man${MANPATH+:$MANPATH}:";
-export INFOPATH="/opt/homebrew/share/info:${INFOPATH:-}";
-/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 27: /bin/ps: Operation not permitted
 <!doctype html>
 <html lang="ja">
 <head>
@@ -13,20 +5,20 @@ export INFOPATH="/opt/homebrew/share/info:${INFOPATH:-}";
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="暮らしと仕事を無理なく整えるカレンダー連動Todoアプリ">
   <meta property="og:title" content="Balance Board｜暮らしと仕事のバランス管理"><meta property="og:description" content="暮らしと仕事を、無理なく整える。"><meta property="og:image" content="https://asaito-reach.github.io/CraftCommunity/og.png"><meta name="twitter:card" content="summary_large_image">
-  <title>Balance Board</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="responsive-fixes.css">
+  <title>Balance Board</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="responsive-fixes.css"><link rel="stylesheet" href="gantt.css">
 </head>
 <body>
   <header class="topbar"><a class="brand" href="#"><span class="brand-mark">B</span><span><b>Balance Board</b><small>LIFE & WORK PLANNER</small></span></a><button class="primary" id="addButton">＋ やることを追加</button></header>
   <div class="app-shell">
-    <aside class="sidebar"><nav aria-label="表示切替"><button class="nav-button active" data-view="list"><span>☷</span> やること</button><button class="nav-button" data-view="calendar"><span>▦</span> カレンダー</button><button class="nav-button" data-view="done"><span>✓</span> できたこと</button></nav><div class="side-filter"><p>カテゴリ</p><div id="categoryNav"></div></div></aside>
+    <aside class="sidebar"><nav aria-label="表示切替"><button class="nav-button active" data-view="list"><span>☷</span> やること</button><button class="nav-button" data-view="calendar"><span>▦</span> ガントチャート</button><button class="nav-button" data-view="done"><span>✓</span> できたこと</button></nav><div class="side-filter"><p>カテゴリ</p><div id="categoryNav"></div></div></aside>
     <main class="content">
       <section class="page-head"><div><p class="eyebrow" id="todayLabel"></p><h1 id="viewTitle">暮らしのやること</h1><p class="lead">予定を一度登録すれば、一覧とカレンダーへ自動で反映します。</p></div><button class="mobile-add" id="mobileAdd">＋</button></section>
       <section class="stats" id="stats" aria-label="サマリー"></section>
-      <section class="toolbar" aria-label="絞り込み"><label class="search-wrap"><span>⌕</span><input id="search" type="search" placeholder="やることを検索"></label><select id="statusFilter" aria-label="状態で絞り込む"><option value="all">すべての状態</option><option>未着手</option><option>進行中</option><option>習慣</option><option>あとで</option></select><select id="sort" aria-label="並び順"><option value="due">期限日が近い順</option><option value="priority">優先度が高い順</option><option value="new">新しく追加した順</option></select><button class="clear-filter hidden" id="clearFilter">絞り込み解除</button></section>
+      <section class="toolbar" aria-label="絞り込み"><label class="search-wrap"><span>⌕</span><input id="search" type="search" placeholder="やることを検索"></label><select id="statusFilter" aria-label="状態で絞り込む"><option value="all">すべての状態</option><option>未着手</option><option>進行中</option><option>習慣</option><option>あとで</option><option>完了</option></select><select id="sort" aria-label="並び順"><option value="due">期限日が近い順</option><option value="priority">優先度が高い順</option><option value="new">新しく追加した順</option></select><button class="clear-filter hidden" id="clearFilter">絞り込み解除</button></section>
       <section class="panel" id="panel" aria-live="polite"></section>
     </main>
   </div>
-  <div class="modal hidden" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><form class="dialog" id="taskForm"><div class="dialog-head"><div><p class="eyebrow" id="modalMode">NEW TASK</p><h2 id="modalTitle">やることを追加</h2></div><button class="icon-button" type="button" data-close aria-label="閉じる">×</button></div><input id="taskId" type="hidden"><label class="field field-wide">やること<span>*</span><input id="taskTitle" required maxlength="100" placeholder="例：寝る前にストレッチ"></label><div class="form-grid"><label class="field">カテゴリ<select id="taskCategory"></select></label><label class="field">状態<select id="taskStatus"><option>未着手</option><option>進行中</option><option>習慣</option><option>あとで</option><option>完了</option></select></label><label class="field">優先度<select id="taskPriority"><option>高</option><option selected>中</option><option>低</option></select></label><label class="field">期限日<input id="taskDue" type="date" required></label><label class="field field-wide">進捗 <output id="progressOutput">0%</output><input id="taskProgress" type="range" min="0" max="100" step="5" value="0"></label><label class="field field-wide">メモ<textarea id="taskNotes" rows="3" maxlength="300" placeholder="買うもの、手順、気づいたことなど"></textarea></label></div><div class="dialog-actions"><button class="danger hidden" type="button" id="deleteButton">削除</button><span class="spacer"></span><button class="secondary" type="button" data-close>キャンセル</button><button class="primary" type="submit">保存する</button></div></form></div>
+  <div class="modal hidden" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><form class="dialog" id="taskForm"><div class="dialog-head"><div><p class="eyebrow" id="modalMode">NEW TASK</p><h2 id="modalTitle">やることを追加</h2></div><button class="icon-button" type="button" data-close aria-label="閉じる">×</button></div><input id="taskId" type="hidden"><label class="field field-wide">やること<span>*</span><input id="taskTitle" required maxlength="100" placeholder="例：寝る前にストレッチ"></label><div class="form-grid"><label class="field">カテゴリ<select id="taskCategory"></select></label><label class="field">状態<select id="taskStatus"><option>未着手</option><option>進行中</option><option>習慣</option><option>あとで</option><option>完了</option></select></label><label class="field">優先度<select id="taskPriority"><option>高</option><option selected>中</option><option>低</option></select></label><label class="field">開始日<input id="taskStart" type="date" required></label><label class="field">期限日<input id="taskDue" type="date" required></label><label class="field field-wide">進捗 <output id="progressOutput">0%</output><input id="taskProgress" type="range" min="0" max="100" step="5" value="0"></label><label class="field field-wide">メモ<textarea id="taskNotes" rows="3" maxlength="300" placeholder="買うもの、手順、気づいたことなど"></textarea></label></div><div class="dialog-actions"><button class="danger hidden" type="button" id="deleteButton">削除</button><span class="spacer"></span><button class="secondary" type="button" data-close>キャンセル</button><button class="primary" type="submit">保存する</button></div></form></div>
   <div class="toast hidden" id="toast" role="status"></div>
   <script src="app.js"></script>
 </body></html>
