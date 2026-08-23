@@ -104,6 +104,7 @@ function render() {
   document.querySelectorAll('.nav-button').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
   document.querySelectorAll('.category-button').forEach((button) => button.classList.toggle('active', button.dataset.category === categoryFilter));
   $('viewTitle').textContent = view === 'list' ? '暮らしのやること' : view === 'calendar' ? '暮らしのガントチャート' : 'できたこと';
+  $('stats').classList.toggle('hidden', view === 'calendar');
   $('statusFilter').disabled = view === 'done';
   $('clearFilter').classList.toggle('hidden', categoryFilter === 'all' && statusFilter === 'all' && !query);
   renderStats();
