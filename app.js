@@ -34,6 +34,7 @@ function loadTasks() {
 function persist() { localStorage.setItem(STORE, JSON.stringify(tasks)); }
 function colorOf(category) { return categories.find(([name]) => name === category)?.[1] || '#8996a8'; }
 function statusClass(status) { return { '未着手': 'status-open', '進行中': 'status-doing', '習慣': 'status-habit', 'あとで': 'status-later', '完了': 'status-done' }[status] || 'status-open'; }
+const optionMarkup = (values, selected) => values.map((value) => `<option${value === selected ? ' selected' : ''}>${value}</option>`).join('');
 
 function filteredTasks() {
   let list = tasks.filter((task) => view === 'done' ? task.status === '完了' : true);
@@ -63,11 +64,11 @@ function listMarkup() {
   const rows = data.map((task) => `<tr class="${task.status === '完了' ? 'is-complete' : ''}">
     <td class="category"><i class="dot" style="background:${colorOf(task.category)}"></i>${esc(task.category)}</td>
     <td class="task-title"><button onclick="openEdit(${task.id})">${esc(task.title)}</button>${task.notes ? `<small class="note-preview">${esc(task.notes)}</small>` : ''}</td>
-    <td><span class="badge ${statusClass(task.status)}">${task.status}</span></td>
-    <td class="${task.priority === '高' ? 'priority-high' : ''}">${task.priority}</td><td>${esc(task.start)}</td><td>${esc(task.due)}</td>
+    <td><select class="inline-select status-select ${statusClass(task.status)}" aria-label="${esc(task.title)}の状態" onchange="quickUpdate(${task.id}, 'status', this.value)">${optionMarkup(['未着手', '進行中', '習慣', 'あとで', '完了'], task.status)}</select></td>
+    <td><select class="inline-select priority-select ${task.priority === '高' ? 'priority-high' : ''}" aria-label="${esc(task.title)}の優先度" onchange="quickUpdate(${task.id}, 'priority', this.value)">${optionMarkup(['高', '中', '低'], task.priority)}</select></td><td>${esc(task.start)}</td><td>${esc(task.due)}</td>
     <td><div class="progress"><span class="progress-bar"><i style="width:${task.progress}%"></i></span>${task.progress}%</div></td>
     <td><div class="row-actions"><button class="small-button" onclick="openEdit(${task.id})">編集</button><button class="small-button" onclick="quickDone(${task.id})">${task.status === '完了' ? '未完了に戻す' : '完了'}</button></div></td></tr>`).join('');
-  const cards = data.map((task) => `<article class="mobile-card ${task.status === '完了' ? 'is-complete' : ''}"><div class="mobile-card-head"><span class="category"><i class="dot" style="display:inline-block;background:${colorOf(task.category)};margin-right:6px"></i>${esc(task.category)}</span><span class="badge ${statusClass(task.status)}">${task.status}</span></div><h3>${esc(task.title)}</h3>${task.notes ? `<p class="mobile-note">${esc(task.notes)}</p>` : ''}<div class="mobile-card-meta"><span>開始日　${esc(task.start)}</span><span>期限日　${esc(task.due)}</span><span>優先度　<b class="${task.priority === '高' ? 'priority-high' : ''}">${task.priority}</b></span><span>進捗　${task.progress}%</span></div><div class="mobile-card-actions"><button class="small-button" onclick="openEdit(${task.id})">編集</button><button class="small-button" onclick="quickDone(${task.id})">${task.status === '完了' ? '未完了に戻す' : '完了にする'}</button></div></article>`).join('');
+  const cards = data.map((task) => `<article class="mobile-card ${task.status === '完了' ? 'is-complete' : ''}"><div class="mobile-card-head"><span class="category"><i class="dot" style="display:inline-block;background:${colorOf(task.category)};margin-right:6px"></i>${esc(task.category)}</span><select class="inline-select status-select ${statusClass(task.status)}" aria-label="${esc(task.title)}の状態" onchange="quickUpdate(${task.id}, 'status', this.value)">${optionMarkup(['未着手', '進行中', '習慣', 'あとで', '完了'], task.status)}</select></div><h3>${esc(task.title)}</h3>${task.notes ? `<p class="mobile-note">${esc(task.notes)}</p>` : ''}<div class="mobile-card-meta"><span>開始日　${esc(task.start)}</span><span>期限日　${esc(task.due)}</span><label>優先度　<select class="inline-select priority-select ${task.priority === '高' ? 'priority-high' : ''}" aria-label="${esc(task.title)}の優先度" onchange="quickUpdate(${task.id}, 'priority', this.value)">${optionMarkup(['高', '中', '低'], task.priority)}</select></label><span>進捗　${task.progress}%</span></div><div class="mobile-card-actions"><button class="small-button" onclick="openEdit(${task.id})">編集</button><button class="small-button" onclick="quickDone(${task.id})">${task.status === '完了' ? '未完了に戻す' : '完了にする'}</button></div></article>`).join('');
   return `<div class="table-wrap"><table class="task-table"><thead><tr>${['カテゴリ', 'やること・メモ', '状態', '優先度', '開始日', '期限日', '進捗', '操作'].map((label) => `<th>${label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table><div class="mobile-list">${cards}</div></div>`;
 }
 
@@ -107,7 +108,7 @@ function openModal(task) {
   $('taskForm').reset(); $('taskId').value = task?.id || ''; $('taskTitle').value = task?.title || '';
   $('taskCategory').value = task?.category || '暮らし'; $('taskStatus').value = task?.status || '未着手'; $('taskPriority').value = task?.priority || '中';
   $('taskStart').value = task?.start || dateKey(new Date()); $('taskDue').value = task?.due || dateKey(new Date());
-  $('taskProgress').value = task?.progress || 0; $('progressOutput').value = `${task?.progress || 0}%`; $('taskNotes').value = task?.notes || '';
+  $('taskProgress').value = task?.progress || 0; $('taskNotes').value = task?.notes || '';
   $('modalMode').textContent = task ? 'EDIT TASK' : 'NEW TASK'; $('modalTitle').textContent = task ? 'やることを編集' : 'やることを追加';
   $('deleteButton').classList.toggle('hidden', !task); $('taskModal').classList.remove('hidden'); setTimeout(() => $('taskTitle').focus(), 0);
 }
@@ -115,6 +116,14 @@ function closeModal() { $('taskModal').classList.add('hidden'); }
 function toast(message) { $('toast').textContent = message; $('toast').classList.remove('hidden'); clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => $('toast').classList.add('hidden'), 2200); }
 
 window.openEdit = (id) => openModal(tasks.find((task) => task.id === id));
+window.quickUpdate = (id, field, value) => {
+  tasks = tasks.map((task) => {
+    if (task.id !== id) return task;
+    if (field === 'status') return { ...task, status: value, progress: value === '完了' ? 100 : (task.status === '完了' ? Math.min(task.progress, 95) : task.progress) };
+    return { ...task, priority: value };
+  });
+  persist(); render(); toast(`${field === 'status' ? '状態' : '優先度'}を更新しました`);
+};
 window.quickDone = (id) => { tasks = tasks.map((task) => task.id === id ? { ...task, status: task.status === '完了' ? '未着手' : '完了', progress: task.status === '完了' ? Math.min(task.progress, 95) : 100 } : task); persist(); render(); toast('状態を更新しました。完了タスクも一覧に残ります。'); };
 window.moveMonth = (amount) => { ganttMonth = new Date(ganttMonth.getFullYear(), ganttMonth.getMonth() + amount, 1); render(); };
 
@@ -129,15 +138,20 @@ $('clearFilter').onclick = () => { categoryFilter = 'all'; statusFilter = 'all';
 [$('addButton'), $('mobileAdd')].forEach((button) => button.onclick = () => openModal());
 document.querySelectorAll('[data-close]').forEach((button) => button.onclick = closeModal);
 $('taskModal').onclick = (event) => { if (event.target === $('taskModal')) closeModal(); };
-$('taskProgress').oninput = (event) => $('progressOutput').value = `${event.target.value}%`;
 $('taskForm').onsubmit = (event) => {
   event.preventDefault();
   const id = Number($('taskId').value); const start = $('taskStart').value; const due = $('taskDue').value;
   if (due < start) { toast('期限日は開始日以降にしてください'); return; }
-  const data = { id: id || Date.now(), title: $('taskTitle').value.trim(), category: $('taskCategory').value, status: $('taskStatus').value, priority: $('taskPriority').value, start, due, progress: Number($('taskProgress').value), notes: $('taskNotes').value.trim() };
+  const data = { id: id || Date.now(), title: $('taskTitle').value.trim(), category: $('taskCategory').value, status: $('taskStatus').value, priority: $('taskPriority').value, start, due, progress: Math.max(0, Math.min(100, Number($('taskProgress').value) || 0)), notes: $('taskNotes').value.trim() };
   if (data.status === '完了') data.progress = 100;
   tasks = id ? tasks.map((task) => task.id === id ? data : task) : [data, ...tasks]; persist(); closeModal(); render(); toast(id ? '内容を更新しました' : '一覧とガントチャートに追加しました');
 };
 $('deleteButton').onclick = () => { const id = Number($('taskId').value); if (!id || !confirm('このタスクを削除しますか？')) return; tasks = tasks.filter((task) => task.id !== id); persist(); closeModal(); render(); toast('タスクを削除しました'); };
-$('todayLabel').textContent = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'full' }).format(new Date());
+function updateClock() {
+  const now = new Date();
+  const weekday = ['日', '月', '火', '水', '木', '金', '土'][now.getDay()];
+  $('todayLabel').textContent = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}(${weekday})${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
 render();
