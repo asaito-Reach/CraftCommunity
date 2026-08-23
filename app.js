@@ -19,11 +19,16 @@ let categoryFilter = 'all';
 let statusFilter = 'all';
 let sortMode = 'due';
 let query = '';
-let ganttMonth = new Date(2026, 7, 1);
+let ganttStart = mondayOfWeek(new Date());
 
 const $ = (id) => document.getElementById(id);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const dateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+function mondayOfWeek(source) {
+  const date = new Date(source); date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return date;
+}
 
 function loadTasks() {
   try {
@@ -73,25 +78,26 @@ function listMarkup() {
 }
 
 function ganttMarkup() {
-  const year = ganttMonth.getFullYear();
-  const month = ganttMonth.getMonth();
-  const days = new Date(year, month + 1, 0).getDate();
-  const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-  const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(days).padStart(2, '0')}`;
-  const visible = filteredTasks().filter((task) => task.start <= monthEnd && task.due >= monthStart);
+  const days = 31;
+  const rangeStart = new Date(ganttStart);
+  const rangeEnd = new Date(rangeStart); rangeEnd.setDate(rangeEnd.getDate() + days - 1);
+  const startKey = dateKey(rangeStart);
+  const endKey = dateKey(rangeEnd);
+  const visible = filteredTasks().filter((task) => task.start <= endKey && task.due >= startKey);
   const weekday = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayHeaders = Array.from({ length: days }, (_, i) => { const date = new Date(year, month, i + 1); const weekend = date.getDay() === 0 || date.getDay() === 6; return `<div class="gantt-day ${weekend ? 'weekend' : ''}"><b>${i + 1}</b><small>${weekday[date.getDay()]}</small></div>`; }).join('');
+  const dayHeaders = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); const weekend = date.getDay() === 0 || date.getDay() === 6; return `<div class="gantt-day ${weekend ? 'weekend' : ''}"><b>${date.getMonth() + 1}/${date.getDate()}</b><small>${weekday[date.getDay()]}</small></div>`; }).join('');
   const rows = visible.map((task) => {
-    const clippedStart = task.start < monthStart ? monthStart : task.start;
-    const clippedDue = task.due > monthEnd ? monthEnd : task.due;
-    const startDay = Number(clippedStart.slice(-2));
-    const dueDay = Number(clippedDue.slice(-2));
+    const clippedStart = task.start < startKey ? startKey : task.start;
+    const clippedDue = task.due > endKey ? endKey : task.due;
+    const startDay = Math.round((new Date(`${clippedStart}T00:00:00`) - rangeStart) / 86400000);
+    const dueDay = Math.round((new Date(`${clippedDue}T00:00:00`) - rangeStart) / 86400000);
     const span = Math.max(1, dueDay - startDay + 1);
-    const cells = Array.from({ length: days }, (_, i) => { const date = new Date(year, month, i + 1); return `<div class="gantt-cell ${date.getDay() === 0 || date.getDay() === 6 ? 'weekend' : ''}"></div>`; }).join('');
-    return `<div class="gantt-row" style="--days:${days}"><button class="gantt-task" onclick="openEdit(${task.id})"><i class="dot" style="background:${colorOf(task.category)}"></i><span><b>${esc(task.title)}</b><small>${esc(task.category)} ・ ${task.start} → ${task.due}</small></span><em class="badge ${statusClass(task.status)}">${task.status}</em></button>${cells}<button class="gantt-bar ${task.status === '完了' ? 'bar-done' : ''}" style="--start:${startDay + 1};--span:${span};--bar:${colorOf(task.category)}" onclick="openEdit(${task.id})" title="${esc(task.title)}（進捗 ${task.progress}%）"><span style="width:${task.progress}%"></span><b>${esc(task.title)}</b></button></div>`;
+    const cells = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); return `<div class="gantt-cell ${date.getDay() === 0 || date.getDay() === 6 ? 'weekend' : ''}"></div>`; }).join('');
+    return `<div class="gantt-row" style="--days:${days}"><button class="gantt-task" onclick="openEdit(${task.id})"><i class="dot" style="background:${colorOf(task.category)}"></i><span><b>${esc(task.title)}</b><small>${esc(task.category)} ・ ${task.start} → ${task.due}</small></span><em class="badge ${statusClass(task.status)}">${task.status}</em></button>${cells}<button class="gantt-bar ${task.status === '完了' ? 'bar-done' : ''}" style="--start:${startDay + 2};--span:${span};--bar:${colorOf(task.category)}" onclick="openEdit(${task.id})" title="${esc(task.title)}（進捗 ${task.progress}%）"><span style="width:${task.progress}%"></span><b>${esc(task.title)}</b></button></div>`;
   }).join('');
-  const body = visible.length ? rows : '<div class="empty-state"><strong>この月に該当するタスクはありません</strong></div>';
-  return `<div class="gantt-toolbar"><button onclick="moveMonth(-1)" aria-label="前月">‹</button><b>${year}年${month + 1}月</b><button onclick="moveMonth(1)" aria-label="翌月">›</button></div><div class="gantt-scroll"><div class="gantt-board" style="--days:${days}"><div class="gantt-header"><div class="gantt-task-head">タスク / 期間</div>${dayHeaders}</div>${body}</div></div>`;
+  const body = visible.length ? rows : '<div class="empty-state"><strong>この期間に該当するタスクはありません</strong></div>';
+  const rangeLabel = `${rangeStart.getFullYear()}/${rangeStart.getMonth() + 1}/${rangeStart.getDate()} 〜 ${rangeEnd.getFullYear()}/${rangeEnd.getMonth() + 1}/${rangeEnd.getDate()}`;
+  return `<div class="gantt-toolbar"><button onclick="moveMonth(-1)" aria-label="前の31日間">‹</button><div class="gantt-range"><b>${rangeLabel}</b><button onclick="goToday()">今週</button></div><button onclick="moveMonth(1)" aria-label="次の31日間">›</button></div><div class="gantt-scroll"><div class="gantt-board" style="--days:${days}"><div class="gantt-header"><div class="gantt-task-head">タスク / 期間</div>${dayHeaders}</div>${body}</div></div>`;
 }
 
 function render() {
@@ -125,7 +131,8 @@ window.quickUpdate = (id, field, value) => {
   persist(); render(); toast(`${field === 'status' ? '状態' : '優先度'}を更新しました`);
 };
 window.quickDone = (id) => { tasks = tasks.map((task) => task.id === id ? { ...task, status: task.status === '完了' ? '未着手' : '完了', progress: task.status === '完了' ? Math.min(task.progress, 95) : 100 } : task); persist(); render(); toast('状態を更新しました。完了タスクも一覧に残ります。'); };
-window.moveMonth = (amount) => { ganttMonth = new Date(ganttMonth.getFullYear(), ganttMonth.getMonth() + amount, 1); render(); };
+window.moveMonth = (amount) => { ganttStart.setDate(ganttStart.getDate() + amount * 31); render(); };
+window.goToday = () => { ganttStart = mondayOfWeek(new Date()); render(); };
 
 $('categoryNav').innerHTML = `<button class="category-button active" data-category="all"><i class="dot" style="background:#8996a8"></i>すべて</button>` + categories.map(([name, color]) => `<button class="category-button" data-category="${name}"><i class="dot" style="background:${color}"></i>${name}</button>`).join('');
 $('taskCategory').innerHTML = categories.map(([name]) => `<option>${name}</option>`).join('');
