@@ -48,7 +48,7 @@ body{background:var(--bg);font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN"
 @media(max-width:900px){.sidebar{background:#fff}.nav-button.active{box-shadow:inset 0 -2px #64bda4}}
 @media(max-width:520px){.sidebar{height:48px;min-height:48px;padding:6px 8px}.sidebar nav{height:36px;align-items:stretch}.nav-button{height:36px;min-height:36px;gap:3px;padding:0 2px;font-size:10px;line-height:1}.nav-button .material-symbols-rounded{font-size:16px;line-height:1}.content{padding-top:12px}}
 .brand-mark.material-symbols-rounded{display:grid!important;place-items:center;line-height:1!important;text-align:center}
-.gantt-row{overflow:visible}.gantt-day.weekend,.gantt-cell.weekend,.gantt-day.holiday,.gantt-cell.holiday{background:#e2dad5!important}.gantt-day.holiday b{color:#795d54}
+.gantt-row{overflow:visible}.gantt-day.weekend,.gantt-day.holiday{background:#f0eeeb!important}.gantt-cell.weekend,.gantt-cell.holiday{background:#e2dad5!important}
 .gantt-bar>b{left:7px!important;width:max-content!important;max-width:none!important;overflow:visible!important;margin-left:0!important;text-overflow:clip!important;white-space:nowrap!important}
 .gantt-bar{background:color-mix(in srgb,var(--bar) 8%,transparent)!important}
 .gantt-bar>span{background:color-mix(in srgb,var(--bar) 16%,transparent)!important}
