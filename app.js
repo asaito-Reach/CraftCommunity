@@ -29,6 +29,11 @@ function mondayOfWeek(source) {
   date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
   return date;
 }
+const japaneseHolidays = new Set([
+  '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23',
+  '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29','2027-05-03','2027-05-04','2027-05-05','2027-07-19','2027-08-11','2027-09-20','2027-09-23','2027-10-11','2027-11-03','2027-11-23'
+]);
+const dayOffClass = (date) => `${date.getDay() === 0 || date.getDay() === 6 ? 'weekend ' : ''}${japaneseHolidays.has(dateKey(date)) ? 'holiday' : ''}`.trim();
 
 function loadTasks() {
   try {
@@ -85,14 +90,14 @@ function ganttMarkup() {
   const endKey = dateKey(rangeEnd);
   const visible = filteredTasks().filter((task) => task.start <= endKey && task.due >= startKey);
   const weekday = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayHeaders = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); const weekend = date.getDay() === 0 || date.getDay() === 6; return `<div class="gantt-day ${weekend ? 'weekend' : ''}"><b>${date.getMonth() + 1}/${date.getDate()}</b><small>${weekday[date.getDay()]}</small></div>`; }).join('');
+  const dayHeaders = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); return `<div class="gantt-day ${dayOffClass(date)}"><b>${date.getMonth() + 1}/${date.getDate()}</b><small>${weekday[date.getDay()]}</small></div>`; }).join('');
   const rows = visible.map((task) => {
     const clippedStart = task.start < startKey ? startKey : task.start;
     const clippedDue = task.due > endKey ? endKey : task.due;
     const startDay = Math.round((new Date(`${clippedStart}T00:00:00`) - rangeStart) / 86400000);
     const dueDay = Math.round((new Date(`${clippedDue}T00:00:00`) - rangeStart) / 86400000);
     const span = Math.max(1, dueDay - startDay + 1);
-    const cells = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); return `<div class="gantt-cell ${date.getDay() === 0 || date.getDay() === 6 ? 'weekend' : ''}"></div>`; }).join('');
+    const cells = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); return `<div class="gantt-cell ${dayOffClass(date)}"></div>`; }).join('');
     return `<div class="gantt-row" style="--days:${days}"><button class="gantt-task" onclick="openEdit(${task.id})"><i class="dot" style="background:${colorOf(task.category)}"></i><span><b>${esc(task.title)}</b><small>${esc(task.category)} ・ ${task.start} → ${task.due}</small></span><em class="badge ${statusClass(task.status)}">${task.status}</em></button>${cells}<button class="gantt-bar ${task.status === '完了' ? 'bar-done' : ''}" style="--start:${startDay + 2};--span:${span};--bar:${colorOf(task.category)}" onclick="openEdit(${task.id})" title="${esc(task.title)}（進捗 ${task.progress}%）"><span style="width:${task.progress}%"></span><b>${esc(task.title)}</b></button></div>`;
   }).join('');
   const body = visible.length ? rows : '<div class="empty-state"><strong>この期間に該当するタスクはありません</strong></div>';
