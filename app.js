@@ -1,7 +1,7 @@
 const STORE = 'balance-board-tasks-v3';
 const categories = [
-  ['からだ', '#35a571'], ['食事', '#f28a3a'], ['暮らし', '#3da6d8'],
-  ['ペット', '#8a62d5'], ['自分時間', '#e96fa5']
+  ['からだ', '#49a98f'], ['食事', '#79cbb4'], ['暮らし', '#3e927d'],
+  ['ペット', '#8b746c'], ['自分時間', '#66bda5']
 ];
 const defaults = [
   { id: 1, category: 'からだ', title: '朝のストレッチを10分する', status: '習慣', priority: '中', start: '2026-08-18', due: '2026-08-23', progress: 80, notes: '肩と股関節を中心に。' },
