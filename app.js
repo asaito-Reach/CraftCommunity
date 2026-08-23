@@ -1,37 +1,143 @@
-/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 27: /bin/ps: Operation not permitted
-export HOMEBREW_PREFIX="/opt/homebrew";
-export HOMEBREW_CELLAR="/opt/homebrew/Cellar";
-export HOMEBREW_REPOSITORY="/opt/homebrew";
-export PATH="/opt/homebrew/bin:/opt/homebrew/sbin${PATH+:$PATH}";
-export MANPATH="/opt/homebrew/share/man${MANPATH+:$MANPATH}:";
-export INFOPATH="/opt/homebrew/share/info:${INFOPATH:-}";
-/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 27: /bin/ps: Operation not permitted
-const STORE='balance-board-tasks-v2';
-const categories=[['からだ','#35a571'],['食事','#f28a3a'],['暮らし','#3da6d8'],['ペット','#8a62d5'],['自分時間','#e96fa5']];
-const defaults=[
- {id:1,category:'からだ',title:'朝のストレッチを10分する',status:'習慣',priority:'中',due:'2026-08-23',progress:80,notes:'肩と股関節を中心に。'},
- {id:2,category:'食事',title:'1週間分の献立を決めて買い出し',status:'未着手',priority:'高',due:'2026-08-24',progress:0,notes:'野菜、卵、ヨーグルト、猫用おやつ'},
- {id:3,category:'暮らし',title:'クローゼット上段の収納を見直す',status:'進行中',priority:'中',due:'2026-08-29',progress:40,notes:'季節外の服をケースへ移す。'},
- {id:4,category:'ペット',title:'トイレ砂とフードの在庫チェック',status:'未着手',priority:'高',due:'2026-08-25',progress:0,notes:''},
- {id:5,category:'自分時間',title:'読みかけの本を30ページ読む',status:'進行中',priority:'低',due:'2026-08-27',progress:55,notes:'夜はスマホを置いて読む。'},
- {id:6,category:'暮らし',title:'キッチンの換気扇を掃除する',status:'あとで',priority:'低',due:'2026-09-05',progress:0,notes:''}
+const STORE = 'balance-board-tasks-v3';
+const categories = [
+  ['からだ', '#35a571'], ['食事', '#f28a3a'], ['暮らし', '#3da6d8'],
+  ['ペット', '#8a62d5'], ['自分時間', '#e96fa5']
 ];
-let tasks=load(),view='list',categoryFilter='all',statusFilter='all',sort='due',query='',month=new Date();
-const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function load(){try{const saved=JSON.parse(localStorage.getItem(STORE));return Array.isArray(saved)?saved:defaults}catch{return defaults}}
-function persist(){localStorage.setItem(STORE,JSON.stringify(tasks))}
-function colorOf(c){return categories.find(x=>x[0]===c)?.[1]||'#8996a8'}
-function filteredTasks(){let list=tasks.filter(t=>view==='done'?t.status==='完了':t.status!=='完了');if(categoryFilter!=='all')list=list.filter(t=>t.category===categoryFilter);if(statusFilter!=='all'&&view!=='done')list=list.filter(t=>t.status===statusFilter);if(query)list=list.filter(t=>(t.title+' '+t.category+' '+(t.notes||'')).toLowerCase().includes(query));const weight={高:0,中:1,低:2};return list.sort((a,b)=>sort==='priority'?weight[a.priority]-weight[b.priority]:sort==='new'?b.id-a.id:(a.due||'9999').localeCompare(b.due||'9999'))}
-function statusClass(s){return {'未着手':'status-open','進行中':'status-doing','習慣':'status-habit','あとで':'status-later','完了':'status-done'}[s]||'status-open'}
-function renderStats(){const open=tasks.filter(t=>t.status!=='完了'),today=dateKey(new Date()),weekEnd=new Date();weekEnd.setDate(weekEnd.getDate()+7);const done=tasks.filter(t=>t.status==='完了').length,total=tasks.length;const data=[['今日',open.filter(t=>t.due===today).length,'#ed665f'],['進行中',open.filter(t=>t.status==='進行中').length,'#3567d6'],['7日以内',open.filter(t=>t.due>=today&&t.due<=dateKey(weekEnd)).length,'#35a571'],['達成率',total?Math.round(done/total*100)+'%':'0%','#8a62d5']];$('stats').innerHTML=data.map(([a,b,c])=>`<div class="stat" style="border-color:${c}"><small>${a}</small><b>${b}</b></div>`).join('')}
-function listMarkup(){const data=filteredTasks();if(!data.length)return `<div class="empty-state"><strong>該当する予定はありません</strong><p>絞り込みを解除するか、新しい予定を追加してください。</p></div>`;const rows=data.map(t=>`<tr><td class="category"><i class="dot" style="background:${colorOf(t.category)}"></i>${esc(t.category)}</td><td class="task-title"><button onclick="openEdit(${t.id})">${esc(t.title)}</button>${t.notes?`<small class="note-preview">${esc(t.notes)}</small>`:''}</td><td><span class="badge ${statusClass(t.status)}">${t.status}</span></td><td class="${t.priority==='高'?'priority-high':''}">${t.priority}</td><td>${esc(t.due||'未定')}</td><td><div class="progress"><span class="progress-bar"><i style="width:${t.progress}%"></i></span>${t.progress}%</div></td><td><div class="row-actions"><button class="small-button" onclick="openEdit(${t.id})">編集</button><button class="small-button" onclick="quickDone(${t.id})">${t.status==='完了'?'戻す':'完了'}</button></div></td></tr>`).join('');const cards=data.map(t=>`<article class="mobile-card"><div class="mobile-card-head"><span class="category"><i class="dot" style="display:inline-block;background:${colorOf(t.category)};margin-right:6px"></i>${esc(t.category)}</span><span class="badge ${statusClass(t.status)}">${t.status}</span></div><h3>${esc(t.title)}</h3>${t.notes?`<p class="mobile-note">${esc(t.notes)}</p>`:''}<div class="mobile-card-meta"><span>期限日　${esc(t.due||'未定')}</span><span>優先度　<b class="${t.priority==='高'?'priority-high':''}">${t.priority}</b></span><span>進捗　${t.progress}%</span><span>${t.notes?'メモあり':'メモなし'}</span></div><div class="mobile-card-actions"><button class="small-button" onclick="openEdit(${t.id})">編集</button><button class="small-button" onclick="quickDone(${t.id})">${t.status==='完了'?'一覧へ戻す':'完了にする'}</button></div></article>`).join('');return `<div class="table-wrap"><table class="task-table"><thead><tr>${['カテゴリ','やること・メモ','状態','優先度','期限日','進捗','操作'].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table><div class="mobile-list">${cards}</div></div>`}
-function calendarMarkup(){const y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1).getDay(),last=new Date(y,m+1,0).getDate(),today=dateKey(new Date()),monthTasks=filteredTasks().filter(t=>t.due?.startsWith(`${y}-${String(m+1).padStart(2,'0')}`));let cells=Array.from({length:first},()=>'<div class="calendar-day is-out"></div>');for(let d=1;d<=last;d++){const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,events=monthTasks.filter(t=>t.due===key);cells.push(`<div class="calendar-day"><span class="day-number ${key===today?'is-today':''}">${d}</span>${events.map(t=>`<button class="calendar-event" style="border-color:${colorOf(t.category)}" onclick="openEdit(${t.id})" title="${esc(t.title)}">${esc(t.title)}</button>`).join('')}</div>`)}const agenda=monthTasks.length?monthTasks.map(t=>`<button class="agenda-item" onclick="openEdit(${t.id})"><time>${Number(t.due.slice(-2))}<small>${['日','月','火','水','木','金','土'][new Date(t.due+'T00:00:00').getDay()]}</small></time><i style="background:${colorOf(t.category)}"></i><span><b>${esc(t.title)}</b><small>${esc(t.category)} ・ 期限日 ${esc(t.due)}</small>${t.notes?`<em>${esc(t.notes)}</em>`:''}</span><strong class="badge ${statusClass(t.status)}">${t.status}</strong></button>`).join(''):`<div class="empty-state"><strong>この月の予定はありません</strong></div>`;return `<div class="calendar-head"><button onclick="moveMonth(-1)" aria-label="前月">‹</button><b>${y}年${m+1}月</b><button onclick="moveMonth(1)" aria-label="翌月">›</button></div><div class="calendar-desktop"><div class="week">${['日','月','火','水','木','金','土'].map(x=>`<div>${x}</div>`).join('')}</div><div class="calendar-grid">${cells.join('')}</div></div><div class="calendar-agenda">${agenda}</div>`}
-function render(){document.querySelectorAll('.nav-button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));document.querySelectorAll('.category-button').forEach(b=>b.classList.toggle('active',b.dataset.category===categoryFilter));$('viewTitle').textContent=view==='list'?'暮らしのやること':view==='calendar'?'暮らしのカレンダー':'できたこと';$('statusFilter').disabled=view==='done';$('clearFilter').classList.toggle('hidden',categoryFilter==='all'&&statusFilter==='all'&&!query);renderStats();$('panel').innerHTML=view==='calendar'?calendarMarkup():listMarkup()}
-function openModal(task){$('taskForm').reset();$('taskId').value=task?.id||'';$('taskTitle').value=task?.title||'';$('taskCategory').value=task?.category||'暮らし';$('taskStatus').value=task?.status||'未着手';$('taskPriority').value=task?.priority||'中';$('taskDue').value=task?.due||dateKey(new Date());$('taskProgress').value=task?.progress||0;$('progressOutput').value=(task?.progress||0)+'%';$('taskNotes').value=task?.notes||'';$('modalMode').textContent=task?'EDIT TASK':'NEW TASK';$('modalTitle').textContent=task?'やることを編集':'やることを追加';$('deleteButton').classList.toggle('hidden',!task);$('taskModal').classList.remove('hidden');setTimeout(()=>$('taskTitle').focus(),0)}
-function closeModal(){$('taskModal').classList.add('hidden')}
-window.openEdit=id=>openModal(tasks.find(t=>t.id===id));window.quickDone=id=>{tasks=tasks.map(t=>t.id===id?{...t,status:t.status==='完了'?'未着手':'完了',progress:t.status==='完了'?Math.min(t.progress,95):100}:t);persist();render();toast('状態を更新しました')};window.moveMonth=n=>{month=new Date(month.getFullYear(),month.getMonth()+n,1);render()};
-function toast(message){$('toast').textContent=message;$('toast').classList.remove('hidden');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),2200)}function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-$('categoryNav').innerHTML=`<button class="category-button active" data-category="all"><i class="dot" style="background:#8996a8"></i>すべて</button>`+categories.map(([c,color])=>`<button class="category-button" data-category="${c}"><i class="dot" style="background:${color}"></i>${c}</button>`).join('');$('taskCategory').innerHTML=categories.map(([c])=>`<option>${c}</option>`).join('');
-document.querySelectorAll('.nav-button').forEach(b=>b.onclick=()=>{view=b.dataset.view;render()});$('categoryNav').onclick=e=>{const b=e.target.closest('.category-button');if(!b)return;categoryFilter=b.dataset.category;render()};$('search').oninput=e=>{query=e.target.value.trim().toLowerCase();render()};$('statusFilter').onchange=e=>{statusFilter=e.target.value;render()};$('sort').onchange=e=>{sort=e.target.value;render()};$('clearFilter').onclick=()=>{categoryFilter='all';statusFilter='all';query='';$('search').value='';$('statusFilter').value='all';render()};[$('addButton'),$('mobileAdd')].forEach(b=>b.onclick=()=>openModal());document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);$('taskModal').onclick=e=>{if(e.target===$('taskModal'))closeModal()};$('taskProgress').oninput=e=>$('progressOutput').value=e.target.value+'%';
-$('taskForm').onsubmit=e=>{e.preventDefault();const id=Number($('taskId').value),data={id:id||Date.now(),title:$('taskTitle').value.trim(),category:$('taskCategory').value,status:$('taskStatus').value,priority:$('taskPriority').value,due:$('taskDue').value,progress:Number($('taskProgress').value),notes:$('taskNotes').value.trim()};if(data.status==='完了')data.progress=100;tasks=id?tasks.map(t=>t.id===id?data:t):[data,...tasks];persist();closeModal();render();toast(id?'内容を更新しました':'一覧とカレンダーに追加しました')};$('deleteButton').onclick=()=>{const id=Number($('taskId').value);if(!id||!confirm('この予定を削除しますか？'))return;tasks=tasks.filter(t=>t.id!==id);persist();closeModal();render();toast('予定を削除しました')};
-$('todayLabel').textContent=new Intl.DateTimeFormat('ja-JP',{dateStyle:'full'}).format(new Date());render();
+const defaults = [
+  { id: 1, category: 'からだ', title: '朝のストレッチを10分する', status: '習慣', priority: '中', start: '2026-08-18', due: '2026-08-23', progress: 80, notes: '肩と股関節を中心に。' },
+  { id: 2, category: '食事', title: '1週間分の献立を決めて買い出し', status: '未着手', priority: '高', start: '2026-08-23', due: '2026-08-24', progress: 0, notes: '野菜、卵、ヨーグルト、猫用おやつ' },
+  { id: 3, category: '暮らし', title: 'クローゼット上段の収納を見直す', status: '進行中', priority: '中', start: '2026-08-22', due: '2026-08-29', progress: 40, notes: '季節外の服をケースへ移す。' },
+  { id: 4, category: 'ペット', title: 'トイレ砂とフードの在庫チェック', status: '未着手', priority: '高', start: '2026-08-24', due: '2026-08-25', progress: 0, notes: '' },
+  { id: 5, category: '自分時間', title: '読みかけの本を30ページ読む', status: '進行中', priority: '低', start: '2026-08-20', due: '2026-08-27', progress: 55, notes: '夜はスマホを置いて読む。' },
+  { id: 6, category: '暮らし', title: 'キッチンの換気扇を掃除する', status: 'あとで', priority: '低', start: '2026-09-01', due: '2026-09-05', progress: 0, notes: '' },
+  { id: 7, category: 'ペット', title: '爪切りとブラッシング', status: '完了', priority: '中', start: '2026-08-16', due: '2026-08-19', progress: 100, notes: '次回は2週間後を目安に。' }
+];
+
+let tasks = loadTasks();
+let view = 'list';
+let categoryFilter = 'all';
+let statusFilter = 'all';
+let sortMode = 'due';
+let query = '';
+let ganttMonth = new Date(2026, 7, 1);
+
+const $ = (id) => document.getElementById(id);
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const dateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+function loadTasks() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE));
+    return Array.isArray(saved) ? saved.map((task) => ({ ...task, start: task.start || task.due, notes: task.notes || '' })) : defaults;
+  } catch { return defaults; }
+}
+function persist() { localStorage.setItem(STORE, JSON.stringify(tasks)); }
+function colorOf(category) { return categories.find(([name]) => name === category)?.[1] || '#8996a8'; }
+function statusClass(status) { return { '未着手': 'status-open', '進行中': 'status-doing', '習慣': 'status-habit', 'あとで': 'status-later', '完了': 'status-done' }[status] || 'status-open'; }
+
+function filteredTasks() {
+  let list = tasks.filter((task) => view === 'done' ? task.status === '完了' : true);
+  if (categoryFilter !== 'all') list = list.filter((task) => task.category === categoryFilter);
+  if (statusFilter !== 'all' && view !== 'done') list = list.filter((task) => task.status === statusFilter);
+  if (query) list = list.filter((task) => `${task.title} ${task.category} ${task.notes}`.toLowerCase().includes(query));
+  const priority = { 高: 0, 中: 1, 低: 2 };
+  return list.sort((a, b) => sortMode === 'priority' ? priority[a.priority] - priority[b.priority] : sortMode === 'new' ? b.id - a.id : (a.due || '9999').localeCompare(b.due || '9999'));
+}
+
+function renderStats() {
+  const today = dateKey(new Date());
+  const weekEnd = new Date(); weekEnd.setDate(weekEnd.getDate() + 7);
+  const done = tasks.filter((task) => task.status === '完了').length;
+  const data = [
+    ['今日が期限', tasks.filter((task) => task.due === today).length, '#ed665f'],
+    ['進行中', tasks.filter((task) => task.status === '進行中').length, '#3567d6'],
+    ['7日以内', tasks.filter((task) => task.status !== '完了' && task.due >= today && task.due <= dateKey(weekEnd)).length, '#35a571'],
+    ['完了', done, '#8a62d5']
+  ];
+  $('stats').innerHTML = data.map(([label, value, color]) => `<div class="stat" style="border-color:${color}"><small>${label}</small><b>${value}</b></div>`).join('');
+}
+
+function listMarkup() {
+  const data = filteredTasks();
+  if (!data.length) return '<div class="empty-state"><strong>該当するタスクはありません</strong><p>絞り込みを解除するか、新しいタスクを追加してください。</p></div>';
+  const rows = data.map((task) => `<tr class="${task.status === '完了' ? 'is-complete' : ''}">
+    <td class="category"><i class="dot" style="background:${colorOf(task.category)}"></i>${esc(task.category)}</td>
+    <td class="task-title"><button onclick="openEdit(${task.id})">${esc(task.title)}</button>${task.notes ? `<small class="note-preview">${esc(task.notes)}</small>` : ''}</td>
+    <td><span class="badge ${statusClass(task.status)}">${task.status}</span></td>
+    <td class="${task.priority === '高' ? 'priority-high' : ''}">${task.priority}</td><td>${esc(task.start)}</td><td>${esc(task.due)}</td>
+    <td><div class="progress"><span class="progress-bar"><i style="width:${task.progress}%"></i></span>${task.progress}%</div></td>
+    <td><div class="row-actions"><button class="small-button" onclick="openEdit(${task.id})">編集</button><button class="small-button" onclick="quickDone(${task.id})">${task.status === '完了' ? '未完了に戻す' : '完了'}</button></div></td></tr>`).join('');
+  const cards = data.map((task) => `<article class="mobile-card ${task.status === '完了' ? 'is-complete' : ''}"><div class="mobile-card-head"><span class="category"><i class="dot" style="display:inline-block;background:${colorOf(task.category)};margin-right:6px"></i>${esc(task.category)}</span><span class="badge ${statusClass(task.status)}">${task.status}</span></div><h3>${esc(task.title)}</h3>${task.notes ? `<p class="mobile-note">${esc(task.notes)}</p>` : ''}<div class="mobile-card-meta"><span>開始日　${esc(task.start)}</span><span>期限日　${esc(task.due)}</span><span>優先度　<b class="${task.priority === '高' ? 'priority-high' : ''}">${task.priority}</b></span><span>進捗　${task.progress}%</span></div><div class="mobile-card-actions"><button class="small-button" onclick="openEdit(${task.id})">編集</button><button class="small-button" onclick="quickDone(${task.id})">${task.status === '完了' ? '未完了に戻す' : '完了にする'}</button></div></article>`).join('');
+  return `<div class="table-wrap"><table class="task-table"><thead><tr>${['カテゴリ', 'やること・メモ', '状態', '優先度', '開始日', '期限日', '進捗', '操作'].map((label) => `<th>${label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table><div class="mobile-list">${cards}</div></div>`;
+}
+
+function ganttMarkup() {
+  const year = ganttMonth.getFullYear();
+  const month = ganttMonth.getMonth();
+  const days = new Date(year, month + 1, 0).getDate();
+  const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(days).padStart(2, '0')}`;
+  const visible = filteredTasks().filter((task) => task.start <= monthEnd && task.due >= monthStart);
+  const weekday = ['日', '月', '火', '水', '木', '金', '土'];
+  const dayHeaders = Array.from({ length: days }, (_, i) => { const date = new Date(year, month, i + 1); const weekend = date.getDay() === 0 || date.getDay() === 6; return `<div class="gantt-day ${weekend ? 'weekend' : ''}"><b>${i + 1}</b><small>${weekday[date.getDay()]}</small></div>`; }).join('');
+  const rows = visible.map((task) => {
+    const clippedStart = task.start < monthStart ? monthStart : task.start;
+    const clippedDue = task.due > monthEnd ? monthEnd : task.due;
+    const startDay = Number(clippedStart.slice(-2));
+    const dueDay = Number(clippedDue.slice(-2));
+    const span = Math.max(1, dueDay - startDay + 1);
+    const cells = Array.from({ length: days }, (_, i) => { const date = new Date(year, month, i + 1); return `<div class="gantt-cell ${date.getDay() === 0 || date.getDay() === 6 ? 'weekend' : ''}"></div>`; }).join('');
+    return `<div class="gantt-row" style="--days:${days}"><button class="gantt-task" onclick="openEdit(${task.id})"><i class="dot" style="background:${colorOf(task.category)}"></i><span><b>${esc(task.title)}</b><small>${esc(task.category)} ・ ${task.start} → ${task.due}</small></span><em class="badge ${statusClass(task.status)}">${task.status}</em></button>${cells}<button class="gantt-bar ${task.status === '完了' ? 'bar-done' : ''}" style="--start:${startDay + 1};--span:${span};--bar:${colorOf(task.category)}" onclick="openEdit(${task.id})" title="${esc(task.title)}"><span style="width:${task.progress}%"></span><b>${task.progress}%</b></button></div>`;
+  }).join('');
+  const body = visible.length ? rows : '<div class="empty-state"><strong>この月に該当するタスクはありません</strong></div>';
+  return `<div class="gantt-toolbar"><button onclick="moveMonth(-1)" aria-label="前月">‹</button><b>${year}年${month + 1}月</b><button onclick="moveMonth(1)" aria-label="翌月">›</button></div><div class="gantt-scroll"><div class="gantt-board" style="--days:${days}"><div class="gantt-header"><div class="gantt-task-head">タスク / 期間</div>${dayHeaders}</div>${body}</div></div>`;
+}
+
+function render() {
+  document.querySelectorAll('.nav-button').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  document.querySelectorAll('.category-button').forEach((button) => button.classList.toggle('active', button.dataset.category === categoryFilter));
+  $('viewTitle').textContent = view === 'list' ? '暮らしのやること' : view === 'calendar' ? '暮らしのガントチャート' : 'できたこと';
+  $('statusFilter').disabled = view === 'done';
+  $('clearFilter').classList.toggle('hidden', categoryFilter === 'all' && statusFilter === 'all' && !query);
+  renderStats();
+  $('panel').innerHTML = view === 'calendar' ? ganttMarkup() : listMarkup();
+}
+
+function openModal(task) {
+  $('taskForm').reset(); $('taskId').value = task?.id || ''; $('taskTitle').value = task?.title || '';
+  $('taskCategory').value = task?.category || '暮らし'; $('taskStatus').value = task?.status || '未着手'; $('taskPriority').value = task?.priority || '中';
+  $('taskStart').value = task?.start || dateKey(new Date()); $('taskDue').value = task?.due || dateKey(new Date());
+  $('taskProgress').value = task?.progress || 0; $('progressOutput').value = `${task?.progress || 0}%`; $('taskNotes').value = task?.notes || '';
+  $('modalMode').textContent = task ? 'EDIT TASK' : 'NEW TASK'; $('modalTitle').textContent = task ? 'やることを編集' : 'やることを追加';
+  $('deleteButton').classList.toggle('hidden', !task); $('taskModal').classList.remove('hidden'); setTimeout(() => $('taskTitle').focus(), 0);
+}
+function closeModal() { $('taskModal').classList.add('hidden'); }
+function toast(message) { $('toast').textContent = message; $('toast').classList.remove('hidden'); clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => $('toast').classList.add('hidden'), 2200); }
+
+window.openEdit = (id) => openModal(tasks.find((task) => task.id === id));
+window.quickDone = (id) => { tasks = tasks.map((task) => task.id === id ? { ...task, status: task.status === '完了' ? '未着手' : '完了', progress: task.status === '完了' ? Math.min(task.progress, 95) : 100 } : task); persist(); render(); toast('状態を更新しました。完了タスクも一覧に残ります。'); };
+window.moveMonth = (amount) => { ganttMonth = new Date(ganttMonth.getFullYear(), ganttMonth.getMonth() + amount, 1); render(); };
+
+$('categoryNav').innerHTML = `<button class="category-button active" data-category="all"><i class="dot" style="background:#8996a8"></i>すべて</button>` + categories.map(([name, color]) => `<button class="category-button" data-category="${name}"><i class="dot" style="background:${color}"></i>${name}</button>`).join('');
+$('taskCategory').innerHTML = categories.map(([name]) => `<option>${name}</option>`).join('');
+document.querySelectorAll('.nav-button').forEach((button) => button.onclick = () => { view = button.dataset.view; render(); });
+$('categoryNav').onclick = (event) => { const button = event.target.closest('.category-button'); if (!button) return; categoryFilter = button.dataset.category; render(); };
+$('search').oninput = (event) => { query = event.target.value.trim().toLowerCase(); render(); };
+$('statusFilter').onchange = (event) => { statusFilter = event.target.value; render(); };
+$('sort').onchange = (event) => { sortMode = event.target.value; render(); };
+$('clearFilter').onclick = () => { categoryFilter = 'all'; statusFilter = 'all'; query = ''; $('search').value = ''; $('statusFilter').value = 'all'; render(); };
+[$('addButton'), $('mobileAdd')].forEach((button) => button.onclick = () => openModal());
+document.querySelectorAll('[data-close]').forEach((button) => button.onclick = closeModal);
+$('taskModal').onclick = (event) => { if (event.target === $('taskModal')) closeModal(); };
+$('taskProgress').oninput = (event) => $('progressOutput').value = `${event.target.value}%`;
+$('taskForm').onsubmit = (event) => {
+  event.preventDefault();
+  const id = Number($('taskId').value); const start = $('taskStart').value; const due = $('taskDue').value;
+  if (due < start) { toast('期限日は開始日以降にしてください'); return; }
+  const data = { id: id || Date.now(), title: $('taskTitle').value.trim(), category: $('taskCategory').value, status: $('taskStatus').value, priority: $('taskPriority').value, start, due, progress: Number($('taskProgress').value), notes: $('taskNotes').value.trim() };
+  if (data.status === '完了') data.progress = 100;
+  tasks = id ? tasks.map((task) => task.id === id ? data : task) : [data, ...tasks]; persist(); closeModal(); render(); toast(id ? '内容を更新しました' : '一覧とガントチャートに追加しました');
+};
+$('deleteButton').onclick = () => { const id = Number($('taskId').value); if (!id || !confirm('このタスクを削除しますか？')) return; tasks = tasks.filter((task) => task.id !== id); persist(); closeModal(); render(); toast('タスクを削除しました'); };
+$('todayLabel').textContent = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'full' }).format(new Date());
+render();
