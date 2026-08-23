@@ -97,7 +97,7 @@ function ganttMarkup() {
     const startDay = Math.round((new Date(`${clippedStart}T00:00:00`) - rangeStart) / 86400000);
     const dueDay = Math.round((new Date(`${clippedDue}T00:00:00`) - rangeStart) / 86400000);
     const span = Math.max(1, dueDay - startDay + 1);
-    const cells = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); return `<div class="gantt-cell ${dayOffClass(date)}"></div>`; }).join('');
+    const cells = Array.from({ length: days }, (_, i) => { const date = new Date(rangeStart); date.setDate(date.getDate() + i); return `<div class="gantt-cell ${dayOffClass(date)}" style="grid-column:${i + 2}"></div>`; }).join('');
     return `<div class="gantt-row" style="--days:${days}"><button class="gantt-task" onclick="openEdit(${task.id})"><i class="dot" style="background:${colorOf(task.category)}"></i><span><b>${esc(task.title)}</b><small>${esc(task.category)} ・ ${task.start} → ${task.due}</small></span><em class="badge ${statusClass(task.status)}">${task.status}</em></button>${cells}<button class="gantt-bar ${task.status === '完了' ? 'bar-done' : ''}" style="--start:${startDay + 2};--span:${span};--bar:${colorOf(task.category)}" onclick="openEdit(${task.id})" title="${esc(task.title)}（進捗 ${task.progress}%）"><span style="width:${task.progress}%"></span><b>${esc(task.title)}</b></button></div>`;
   }).join('');
   const body = visible.length ? rows : '<div class="empty-state"><strong>この期間に該当するタスクはありません</strong></div>';
